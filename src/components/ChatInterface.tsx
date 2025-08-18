@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Send, Bot, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { AssessmentConfig, AppState } from './AssessmentCreator';
 
 interface Message {
@@ -30,6 +31,7 @@ export const ChatInterface = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [currentStep, setCurrentStep] = useState(0);
+  const [isModificationMode, setIsModificationMode] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const conversationFlow = [
@@ -52,6 +54,10 @@ export const ChatInterface = ({
     {
       message: "Excellent! I have all the details. Do you want me to generate the assessment now?",
       chips: ["Yes, Proceed", "Review Settings"]
+    },
+    {
+      message: "🎉 Your assessment has been generated! Would you like to make any modifications?",
+      chips: ["Make Changes", "Manual Edit Mode", "Looks Good"]
     }
   ];
 
@@ -100,6 +106,17 @@ export const ChatInterface = ({
     }]);
   };
 
+  // Trigger modification flow when assessment preview is ready
+  useEffect(() => {
+    if (appState === 'preview' && currentStep === 4 && !isModificationMode) {
+      setCurrentStep(5);
+      setIsModificationMode(true);
+      setTimeout(() => {
+        addAIMessage(conversationFlow[5].message, conversationFlow[5].chips, 1500);
+      }, 2000);
+    }
+  }, [appState, currentStep, isModificationMode]);
+
   const handleSendMessage = () => {
     if (!input.trim()) return;
     
@@ -109,6 +126,12 @@ export const ChatInterface = ({
       onConfigChange({ ...assessmentConfig, topic: input });
       setCurrentStep(1);
       addAIMessage(conversationFlow[1].message, conversationFlow[1].chips);
+    } else if (isModificationMode && currentStep > 5) {
+      // Handle modification requests
+      addAIMessage(`I'll help you modify that. Let me update the assessment accordingly...`, [], 1000);
+      setTimeout(() => {
+        addAIMessage(`✅ Changes applied! Is there anything else you'd like to modify?`, ["Make More Changes", "Looks Perfect Now"], 1500);
+      }, 2000);
     }
     
     setInput('');
@@ -139,6 +162,28 @@ export const ChatInterface = ({
           addAIMessage("🚀 Starting assessment generation...", []);
         }
         break;
+      case 5: // Modification options
+        if (chip === "Make Changes") {
+          setCurrentStep(6);
+          addAIMessage("Tell me what you'd like to change. For example: 'Make question 3 harder' or 'Add more options to question 1'", []);
+        } else if (chip === "Manual Edit Mode") {
+          onStateChange('customizing');
+          addAIMessage("✏️ Manual edit mode activated! You can now directly edit questions in the main panel.", []);
+        } else if (chip === "Looks Good") {
+          addAIMessage("Perfect! Your assessment is ready. You can download it or export it to your preferred format.", ["Download PDF", "Export Options"]);
+        }
+        break;
+      default:
+        // Handle additional modification flows
+        if (chip === "Make More Changes") {
+          setCurrentStep(6);
+          addAIMessage("What else would you like to modify?", []);
+        } else if (chip === "Looks Perfect Now") {
+          addAIMessage("Excellent! Your assessment is ready for use.", ["Download PDF", "Export Options"]);
+        } else if (chip === "Download PDF" || chip === "Export Options") {
+          addAIMessage("Great choice! Use the action buttons in the main panel to download or export your assessment.", []);
+        }
+        break;
     }
   };
 
@@ -152,82 +197,90 @@ export const ChatInterface = ({
   return (
     <div className="flex flex-col h-full">
       {/* Chat Header */}
-      <div className="p-4 bg-white border-b border-ai-gray-200">
+      <div className="flex-shrink-0 p-4 bg-white border-b border-ai-gray-200">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-ai-blue rounded-full flex items-center justify-center">
             <Bot className="w-5 h-5 text-white" />
           </div>
           <div>
             <h3 className="font-semibold text-ai-gray-900">AI Assistant</h3>
-            <p className="text-sm text-ai-gray-500">Online</p>
+            <p className="text-sm text-ai-gray-500">
+              {appState === 'customizing' ? 'Edit Mode Active' : 'Online'}
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
-          >
-            <div className="flex items-start space-x-2 max-w-[85%]">
-              {message.type === 'ai' && (
-                <div className="w-8 h-8 bg-ai-blue rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                  <Bot className="w-4 h-4 text-white" />
-                </div>
-              )}
-              
-              <div>
-                {message.isTyping ? (
-                  <div className="message-bubble-ai">
-                    <div className="typing-dots">
-                      <span></span>
-                      <span></span>
-                      <span></span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className={message.type === 'ai' ? 'message-bubble-ai' : 'message-bubble-user'}>
-                    {message.content}
+      {/* Messages - Scrollable */}
+      <ScrollArea className="flex-1">
+        <div className="p-4 space-y-4">
+          {messages.map((message) => (
+            <div
+              key={message.id}
+              className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
+            >
+              <div className="flex items-start space-x-2 max-w-[85%]">
+                {message.type === 'ai' && (
+                  <div className="w-8 h-8 bg-ai-blue rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                    <Bot className="w-4 h-4 text-white" />
                   </div>
                 )}
                 
-                {message.chips && message.chips.length > 0 && !message.isTyping && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {message.chips.map((chip, index) => (
-                      <button
-                        key={index}
-                        onClick={() => handleChipClick(chip)}
-                        className="chip-button-primary text-xs"
-                      >
-                        {chip}
-                      </button>
-                    ))}
+                <div>
+                  {message.isTyping ? (
+                    <div className="message-bubble-ai">
+                      <div className="typing-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={message.type === 'ai' ? 'message-bubble-ai' : 'message-bubble-user'}>
+                      {message.content}
+                    </div>
+                  )}
+                  
+                  {message.chips && message.chips.length > 0 && !message.isTyping && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {message.chips.map((chip, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleChipClick(chip)}
+                          className="chip-button-primary text-xs"
+                        >
+                          {chip}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                
+                {message.type === 'user' && (
+                  <div className="w-8 h-8 bg-ai-gray-200 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                    <User className="w-4 h-4 text-ai-gray-600" />
                   </div>
                 )}
               </div>
-              
-              {message.type === 'user' && (
-                <div className="w-8 h-8 bg-ai-gray-200 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                  <User className="w-4 h-4 text-ai-gray-600" />
-                </div>
-              )}
             </div>
-          </div>
-        ))}
-        <div ref={messagesEndRef} />
-      </div>
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
+      </ScrollArea>
 
-      {/* Input Area */}
-      {appState === 'chat' && currentStep === 0 && (
-        <div className="p-4 bg-white border-t border-ai-gray-200">
+      {/* Input Area - Fixed at bottom */}
+      {(appState === 'chat' && currentStep === 0) || (isModificationMode && currentStep > 5) ? (
+        <div className="flex-shrink-0 p-4 bg-white border-t border-ai-gray-200">
           <div className="flex space-x-2">
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Type your message..."
+              placeholder={
+                currentStep === 0 
+                  ? "Type your message..." 
+                  : "Describe what you'd like to change..."
+              }
               className="flex-1"
             />
             <Button onClick={handleSendMessage} size="icon" className="bg-ai-blue hover:bg-ai-blue-600">
@@ -235,11 +288,11 @@ export const ChatInterface = ({
             </Button>
           </div>
         </div>
-      )}
+      ) : null}
 
-      {/* Configuration Summary */}
-      {(appState === 'loading' || appState === 'preview') && (
-        <div className="p-4 bg-white border-t border-ai-gray-200">
+      {/* Configuration Summary - Fixed at bottom */}
+      {(appState === 'loading' || appState === 'preview' || appState === 'customizing') && (
+        <div className="flex-shrink-0 p-4 bg-white border-t border-ai-gray-200">
           <h4 className="font-medium text-ai-gray-900 mb-2">Assessment Settings</h4>
           <div className="space-y-1 text-sm text-ai-gray-600">
             <div><span className="font-medium">Topic:</span> {assessmentConfig.topic}</div>
@@ -247,6 +300,18 @@ export const ChatInterface = ({
             <div><span className="font-medium">Questions:</span> {assessmentConfig.questionCount}</div>
             <div><span className="font-medium">Type:</span> {assessmentConfig.questionType}</div>
           </div>
+          {appState === 'customizing' && (
+            <div className="mt-3">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => onStateChange('preview')}
+                className="action-button-secondary"
+              >
+                Exit Edit Mode
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>
