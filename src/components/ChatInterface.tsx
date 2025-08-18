@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Send, Bot, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { AssessmentConfig, AppState } from './AssessmentCreator';
 
 interface Message {
@@ -196,7 +197,7 @@ export const ChatInterface = ({
   return (
     <div className="flex flex-col h-full">
       {/* Chat Header */}
-      <div className="p-4 bg-white border-b border-ai-gray-200">
+      <div className="flex-shrink-0 p-4 bg-white border-b border-ai-gray-200">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-ai-blue rounded-full flex items-center justify-center">
             <Bot className="w-5 h-5 text-white" />
@@ -210,64 +211,66 @@ export const ChatInterface = ({
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
-          >
-            <div className="flex items-start space-x-2 max-w-[85%]">
-              {message.type === 'ai' && (
-                <div className="w-8 h-8 bg-ai-blue rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                  <Bot className="w-4 h-4 text-white" />
-                </div>
-              )}
-              
-              <div>
-                {message.isTyping ? (
-                  <div className="message-bubble-ai">
-                    <div className="typing-dots">
-                      <span></span>
-                      <span></span>
-                      <span></span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className={message.type === 'ai' ? 'message-bubble-ai' : 'message-bubble-user'}>
-                    {message.content}
+      {/* Messages - Scrollable */}
+      <ScrollArea className="flex-1">
+        <div className="p-4 space-y-4">
+          {messages.map((message) => (
+            <div
+              key={message.id}
+              className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
+            >
+              <div className="flex items-start space-x-2 max-w-[85%]">
+                {message.type === 'ai' && (
+                  <div className="w-8 h-8 bg-ai-blue rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                    <Bot className="w-4 h-4 text-white" />
                   </div>
                 )}
                 
-                {message.chips && message.chips.length > 0 && !message.isTyping && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {message.chips.map((chip, index) => (
-                      <button
-                        key={index}
-                        onClick={() => handleChipClick(chip)}
-                        className="chip-button-primary text-xs"
-                      >
-                        {chip}
-                      </button>
-                    ))}
+                <div>
+                  {message.isTyping ? (
+                    <div className="message-bubble-ai">
+                      <div className="typing-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={message.type === 'ai' ? 'message-bubble-ai' : 'message-bubble-user'}>
+                      {message.content}
+                    </div>
+                  )}
+                  
+                  {message.chips && message.chips.length > 0 && !message.isTyping && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {message.chips.map((chip, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleChipClick(chip)}
+                          className="chip-button-primary text-xs"
+                        >
+                          {chip}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                
+                {message.type === 'user' && (
+                  <div className="w-8 h-8 bg-ai-gray-200 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                    <User className="w-4 h-4 text-ai-gray-600" />
                   </div>
                 )}
               </div>
-              
-              {message.type === 'user' && (
-                <div className="w-8 h-8 bg-ai-gray-200 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                  <User className="w-4 h-4 text-ai-gray-600" />
-                </div>
-              )}
             </div>
-          </div>
-        ))}
-        <div ref={messagesEndRef} />
-      </div>
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
+      </ScrollArea>
 
-      {/* Input Area */}
+      {/* Input Area - Fixed at bottom */}
       {(appState === 'chat' && currentStep === 0) || (isModificationMode && currentStep > 5) ? (
-        <div className="p-4 bg-white border-t border-ai-gray-200">
+        <div className="flex-shrink-0 p-4 bg-white border-t border-ai-gray-200">
           <div className="flex space-x-2">
             <Input
               value={input}
@@ -287,9 +290,9 @@ export const ChatInterface = ({
         </div>
       ) : null}
 
-      {/* Configuration Summary */}
+      {/* Configuration Summary - Fixed at bottom */}
       {(appState === 'loading' || appState === 'preview' || appState === 'customizing') && (
-        <div className="p-4 bg-white border-t border-ai-gray-200">
+        <div className="flex-shrink-0 p-4 bg-white border-t border-ai-gray-200">
           <h4 className="font-medium text-ai-gray-900 mb-2">Assessment Settings</h4>
           <div className="space-y-1 text-sm text-ai-gray-600">
             <div><span className="font-medium">Topic:</span> {assessmentConfig.topic}</div>

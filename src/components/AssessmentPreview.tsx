@@ -3,6 +3,7 @@ import { Download, Edit3, CheckCircle, FileText, FileImage, Upload, Eye, Save } 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { AssessmentConfig, AppState } from './AssessmentCreator';
 
 interface AssessmentPreviewProps {
@@ -117,9 +118,9 @@ export const AssessmentPreview = ({ assessmentConfig, onStateChange }: Assessmen
   };
 
   return (
-    <div className="flex-1 flex flex-col">
-      {/* Header */}
-      <div className="bg-white border-b border-ai-gray-200 p-6">
+    <div className="flex-1 flex flex-col h-full">
+      {/* Header - Fixed */}
+      <div className="flex-shrink-0 bg-white border-b border-ai-gray-200 p-6">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-ai-gray-900 mb-2">
@@ -166,26 +167,28 @@ export const AssessmentPreview = ({ assessmentConfig, onStateChange }: Assessmen
         </div>
       </div>
 
-      {/* Questions */}
-      <div className="flex-1 overflow-y-auto p-6">
-        <div className="max-w-4xl mx-auto space-y-6">
-          {questionsToShow.map((question, index) => (
-            <QuestionCard
-              key={question.id}
-              question={question}
-              index={index}
-              showExplanations={showExplanations}
-              isEditing={editingQuestion === question.id}
-              onEdit={() => handleEditQuestion(question.id)}
-              onSave={(updatedQuestion) => handleSaveQuestion(question.id, updatedQuestion)}
-              onCancel={() => setEditingQuestion(null)}
-            />
-          ))}
+      {/* Questions - Scrollable */}
+      <ScrollArea className="flex-1">
+        <div className="p-6">
+          <div className="max-w-4xl mx-auto space-y-6">
+            {questionsToShow.map((question, index) => (
+              <QuestionCard
+                key={question.id}
+                question={question}
+                index={index}
+                showExplanations={showExplanations}
+                isEditing={editingQuestion === question.id}
+                onEdit={() => handleEditQuestion(question.id)}
+                onSave={(updatedQuestion) => handleSaveQuestion(question.id, updatedQuestion)}
+                onCancel={() => setEditingQuestion(null)}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      </ScrollArea>
 
-      {/* Action Bar */}
-      <div className="bg-white border-t border-ai-gray-200 p-6">
+      {/* Action Bar - Fixed */}
+      <div className="flex-shrink-0 bg-white border-t border-ai-gray-200 p-6">
         <div className="max-w-4xl mx-auto">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 grid grid-cols-3 gap-3">
