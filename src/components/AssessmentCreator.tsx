@@ -26,20 +26,20 @@ const AssessmentCreator = () => {
   });
 
   return (
-    <div className="min-h-screen bg-ai-gray-50">
+    <div className="h-full bg-ai-gray-50 flex flex-col">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-ai-gray-200">
-        <div className="max-w-full px-6 py-4">
+      <header className="bg-white shadow-sm border-b border-ai-gray-200 flex-shrink-0">
+        <div className="px-4 md:px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-ai-blue rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">AI</span>
               </div>
               <div>
-                <h1 className="text-xl font-semibold text-ai-gray-900">
+                <h1 className="text-lg md:text-xl font-semibold text-ai-gray-900">
                   Assessment Creator
                 </h1>
-                <p className="text-sm text-ai-gray-500">
+                <p className="text-sm text-ai-gray-500 hidden sm:block">
                   AI-powered assessment generation platform
                 </p>
               </div>
@@ -54,9 +54,9 @@ const AssessmentCreator = () => {
       </header>
 
       {/* Main Content */}
-      <div className="flex h-[calc(100vh-80px)]">
-        {/* Left Panel - Workspace (70%) */}
-        <div className="flex-1 w-[70%] bg-white">
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+        {/* Left Panel - Workspace */}
+        <div className="flex-1 lg:w-[70%] bg-white order-2 lg:order-1">
           <WorkspacePanel 
             appState={appState}
             assessmentConfig={assessmentConfig}
@@ -64,8 +64,8 @@ const AssessmentCreator = () => {
           />
         </div>
 
-        {/* Right Panel - Chat (30%) */}
-        <div className="w-[30%] border-l border-ai-gray-200 bg-ai-gray-50">
+        {/* Right Panel - Chat */}
+        <div className="w-full lg:w-[30%] border-t lg:border-t-0 lg:border-l border-ai-gray-200 bg-ai-gray-50 order-1 lg:order-2 min-h-[300px] lg:min-h-0">
           <ChatInterface 
             appState={appState}
             assessmentConfig={assessmentConfig}
