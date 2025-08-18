@@ -30,6 +30,7 @@ export const ChatInterface = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [currentStep, setCurrentStep] = useState(0);
+  const [isModificationMode, setIsModificationMode] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const conversationFlow = [
@@ -52,6 +53,10 @@ export const ChatInterface = ({
     {
       message: "Excellent! I have all the details. Do you want me to generate the assessment now?",
       chips: ["Yes, Proceed", "Review Settings"]
+    },
+    {
+      message: "🎉 Your assessment has been generated! Would you like to make any modifications?",
+      chips: ["Make Changes", "Manual Edit Mode", "Looks Good"]
     }
   ];
 
@@ -100,6 +105,17 @@ export const ChatInterface = ({
     }]);
   };
 
+  // Trigger modification flow when assessment preview is ready
+  useEffect(() => {
+    if (appState === 'preview' && currentStep === 4 && !isModificationMode) {
+      setCurrentStep(5);
+      setIsModificationMode(true);
+      setTimeout(() => {
+        addAIMessage(conversationFlow[5].message, conversationFlow[5].chips, 1500);
+      }, 2000);
+    }
+  }, [appState, currentStep, isModificationMode]);
+
   const handleSendMessage = () => {
     if (!input.trim()) return;
     
@@ -109,6 +125,12 @@ export const ChatInterface = ({
       onConfigChange({ ...assessmentConfig, topic: input });
       setCurrentStep(1);
       addAIMessage(conversationFlow[1].message, conversationFlow[1].chips);
+    } else if (isModificationMode && currentStep > 5) {
+      // Handle modification requests
+      addAIMessage(`I'll help you modify that. Let me update the assessment accordingly...`, [], 1000);
+      setTimeout(() => {
+        addAIMessage(`✅ Changes applied! Is there anything else you'd like to modify?`, ["Make More Changes", "Looks Perfect Now"], 1500);
+      }, 2000);
     }
     
     setInput('');
@@ -139,6 +161,28 @@ export const ChatInterface = ({
           addAIMessage("🚀 Starting assessment generation...", []);
         }
         break;
+      case 5: // Modification options
+        if (chip === "Make Changes") {
+          setCurrentStep(6);
+          addAIMessage("Tell me what you'd like to change. For example: 'Make question 3 harder' or 'Add more options to question 1'", []);
+        } else if (chip === "Manual Edit Mode") {
+          onStateChange('customizing');
+          addAIMessage("✏️ Manual edit mode activated! You can now directly edit questions in the main panel.", []);
+        } else if (chip === "Looks Good") {
+          addAIMessage("Perfect! Your assessment is ready. You can download it or export it to your preferred format.", ["Download PDF", "Export Options"]);
+        }
+        break;
+      default:
+        // Handle additional modification flows
+        if (chip === "Make More Changes") {
+          setCurrentStep(6);
+          addAIMessage("What else would you like to modify?", []);
+        } else if (chip === "Looks Perfect Now") {
+          addAIMessage("Excellent! Your assessment is ready for use.", ["Download PDF", "Export Options"]);
+        } else if (chip === "Download PDF" || chip === "Export Options") {
+          addAIMessage("Great choice! Use the action buttons in the main panel to download or export your assessment.", []);
+        }
+        break;
     }
   };
 
@@ -159,7 +203,9 @@ export const ChatInterface = ({
           </div>
           <div>
             <h3 className="font-semibold text-ai-gray-900">AI Assistant</h3>
-            <p className="text-sm text-ai-gray-500">Online</p>
+            <p className="text-sm text-ai-gray-500">
+              {appState === 'customizing' ? 'Edit Mode Active' : 'Online'}
+            </p>
           </div>
         </div>
       </div>
@@ -220,14 +266,18 @@ export const ChatInterface = ({
       </div>
 
       {/* Input Area */}
-      {appState === 'chat' && currentStep === 0 && (
+      {(appState === 'chat' && currentStep === 0) || (isModificationMode && currentStep > 5) ? (
         <div className="p-4 bg-white border-t border-ai-gray-200">
           <div className="flex space-x-2">
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Type your message..."
+              placeholder={
+                currentStep === 0 
+                  ? "Type your message..." 
+                  : "Describe what you'd like to change..."
+              }
               className="flex-1"
             />
             <Button onClick={handleSendMessage} size="icon" className="bg-ai-blue hover:bg-ai-blue-600">
@@ -235,10 +285,10 @@ export const ChatInterface = ({
             </Button>
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Configuration Summary */}
-      {(appState === 'loading' || appState === 'preview') && (
+      {(appState === 'loading' || appState === 'preview' || appState === 'customizing') && (
         <div className="p-4 bg-white border-t border-ai-gray-200">
           <h4 className="font-medium text-ai-gray-900 mb-2">Assessment Settings</h4>
           <div className="space-y-1 text-sm text-ai-gray-600">
@@ -247,6 +297,18 @@ export const ChatInterface = ({
             <div><span className="font-medium">Questions:</span> {assessmentConfig.questionCount}</div>
             <div><span className="font-medium">Type:</span> {assessmentConfig.questionType}</div>
           </div>
+          {appState === 'customizing' && (
+            <div className="mt-3">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => onStateChange('preview')}
+                className="action-button-secondary"
+              >
+                Exit Edit Mode
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>
