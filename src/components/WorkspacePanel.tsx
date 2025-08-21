@@ -22,7 +22,12 @@ export const WorkspacePanel = ({
       case 'chat':
         return <WelcomeScreen />;
       case 'loading':
-        return <LoadingStage assessmentConfig={assessmentConfig} onComplete={() => onStateChange('preview')} />;
+        return (
+          <LoadingStage 
+            assessmentConfig={assessmentConfig} 
+            onComplete={() => onStateChange('preview')} 
+          />
+        );
       case 'preview':
       case 'customizing':
         return <AssessmentPreview assessmentConfig={assessmentConfig} onStateChange={onStateChange} />;
